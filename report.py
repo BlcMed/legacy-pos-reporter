@@ -309,17 +309,139 @@ def create_footer(canvas, doc):
     canvas.restoreState()
 
 
-def generate_pdf(report_data, output_path=None):
+def create_invoice_table(data_invoices, styles):
     """
-    Generate PDF report from analyzed data.
+    Create a detailed invoice table to include all invoices for detailed reports.
+
+    Args:
+        data_invoices: pandas DataFrame with invoice data. Expected columns include:
+            - "DATE" (datetime/date)
+            - "TABLE_NO" (str/int)
+            - "WAITOR" (str)
+            - "AMOUNT" (float, total for invoice)
+            - "DISCOUNT" (float)
+            - "SERVICE" (float)
+            - "VAT" (float)
+            - "TOTAL" (float, optional; if not present, computed as AMOUNT - DISCOUNT + SERVICE + VAT)
+        styles: reportlab style dictionary
+
+    Returns:
+        List of Flowable elements (Table with all invoices)
+    """
+    from reportlab.platypus import Table, TableStyle, Paragraph, Spacer
+
+    # Choose relevant columns and friendly headers
+    COLUMNS = [
+        ("DATE", "Date"),
+        ("TABLE_NO", "Table"),
+        ("WAITOR", "Waiter"),
+        ("AMOUNT", "Amount"),
+        ("DISCOUNT", "Discount"),
+        ("SERVICE", "Service"),
+        ("VAT", "VAT"),
+        ("TOTAL", "Total"),
+    ]
+
+    # Check if required columns exist, if TOTAL not, calculate it
+    df = data_invoices.copy()
+    if "TOTAL" not in df:
+        # Try to calculate TOTAL as AMOUNT - DISCOUNT + SERVICE + VAT (if all present)
+        cols_needed = {"AMOUNT", "DISCOUNT", "SERVICE", "VAT"}
+        if cols_needed.issubset(df.columns):
+            df["TOTAL"] = (
+                df["AMOUNT"].fillna(0)
+                - df["DISCOUNT"].fillna(0)
+                + df["SERVICE"].fillna(0)
+                + df["VAT"].fillna(0)
+            )
+        else:
+            df["TOTAL"] = None  # fallback
+
+    # Prepare table data: headers first, then per-row values
+    headers = [label for _, label in COLUMNS]
+    table_data = [headers]
+    date_fmt = "%Y-%m-%d"
+
+    for _, row in df.iterrows():
+        row_data = []
+        for col, _ in COLUMNS:
+            val = row.get(col, "")
+            if col == "DATE":
+                # Try to format date
+                if hasattr(val, "strftime"):
+                    val = val.strftime(date_fmt)
+                else:
+                    val = str(val)
+            elif col in ["AMOUNT", "DISCOUNT", "SERVICE", "VAT", "TOTAL"]:
+                try:
+                    val = f"{float(val):.2f}"
+                except Exception:
+                    val = ""
+            row_data.append(val)
+        table_data.append(row_data)
+
+    # Create the table
+    invoice_table = Table(table_data, repeatRows=1, hAlign="LEFT")
+
+    # Table style
+    table_style = TableStyle(
+        [
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#FAFAFA")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#333333")),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, 0), 11),
+            ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+            ("FONTSIZE", (0, 1), (-1, -1), 9),
+            ("ALIGN", (3, 1), (-1, -1), "RIGHT"),
+            ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#DDDDDD")),
+            (
+                "ROWBACKGROUNDS",
+                (0, 1),
+                (-1, -1),
+                [colors.white, colors.HexColor("#F3F3F3")],
+            ),
+            ("LEFTPADDING", (0, 0), (-1, -1), 4),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+            ("TOPPADDING", (0, 0), (-1, -1), 2),
+        ]
+    )
+    invoice_table.setStyle(table_style)
+
+    caption_style = styles["Normal"]
+    caption_style.textColor = colors.HexColor("#555555")
+    caption = Paragraph("Detailed Invoices", caption_style)
+
+    elements = [Spacer(1, 0.2 * inch), caption, Spacer(1, 0.08 * inch), invoice_table]
+    return elements
+
+
+def generate_pdf(report_data, output_path=None, data_invoices=None):
+    """
+    Generate PDF report from analyzed data. If is_detailed is True,
+    includes a detailed invoice table using data_invoices.
 
     Args:
         report_data: Dict with analyzed metrics
         output_path: Optional file path. If None, returns BytesIO
+        data_invoices: pandas DataFrame, Optional for detailed report
 
     Returns:
         BytesIO object if output_path is None, otherwise None
     """
+    # Check for zero transactions -- abort PDF generation if none
+    if (
+        not report_data
+        or "invoices" not in report_data
+        or report_data["invoices"].get("total_transactions", 0) == 0
+    ):
+        msg = "No data available: report not generated (0 transactions)."
+        if output_path:
+            print(f"Skipped PDF generation for {output_path} - {msg}")
+        else:
+            print(msg)
+        return None
+
     # Create PDF
     if output_path:
         pdf = SimpleDocTemplate(output_path, pagesize=letter)
@@ -339,11 +461,19 @@ def generate_pdf(report_data, output_path=None):
     elements.extend(create_top_items_section(report_data))
     elements.extend(create_category_section(report_data))
 
+    # Optionally add detailed invoice table
+    if data_invoices is not None:
+        elements.append(Spacer(1, 0.1 * inch))
+        elements.extend(create_invoice_table(data_invoices, styles))
+
     # Build PDF
     pdf.build(elements, onFirstPage=create_footer, onLaterPages=create_footer)
 
     if output_path:
-        print(f"PDF generated: {output_path}")
+        if data_invoices is not None:
+            print(f"Detailed PDF generated: {output_path}")
+        else:
+            print(f"PDF generated: {output_path}")
         return None
     else:
         buffer.seek(0)
@@ -352,11 +482,45 @@ def generate_pdf(report_data, output_path=None):
 
 if __name__ == "__main__":
     # Test PDF generation
-    from extract import get_monthly_data
+    from extract import get_data_by_time
     from analyze import generate_report_data
 
-    data = get_monthly_data(2025, 11)
-    report = generate_report_data(data["invoices"], data["sales"])
+    month = 11
+    day = None
 
-    generate_pdf(report, "test_October-report.pdf")
-    print("Test PDF created: test_report.pdf")
+    # Generate normal (summary) PDF report for the whole month
+    data = get_data_by_time(year=2025, month=month, day=day)  # entire month data
+    report = generate_report_data(data["invoices"], data["sales"])
+    print(report)
+    generate_pdf(report, f"reports/monthly-report-{month}.pdf")
+    print("Normal PDF created")
+
+    # Generate detailed PDF report for a single day
+    day = 1
+    month = 3
+    data_day = get_data_by_time(2025, month, day=day)
+    data_invoices = data_day["invoices"]
+    data_sales = data_day["sales"]
+    report_day = generate_report_data(data_invoices, data_sales)
+    generate_pdf(
+        report_data=report_day,
+        data_invoices=data_invoices,
+        output_path=f"reports/detailed_report_{month}_{day}.pdf",
+    )
+    print("Detailed PDF created")
+
+    from calendar import monthrange
+
+    for month in range(9, 12):
+        num_days = monthrange(2025, month)[1]
+        for day in range(1, num_days + 1):
+            data_day = get_data_by_time(2025, month, day=day)
+            data_invoices = data_day["invoices"]
+            data_sales = data_day["sales"]
+            report_day = generate_report_data(data_invoices, data_sales)
+            generate_pdf(
+                report_data=report_day,
+                data_invoices=data_invoices,
+                output_path=f"reports/dailydetailed_report_{month}_{day}.pdf",
+            )
+            print(f"Detailed PDF created for {month}/{day}/2025")

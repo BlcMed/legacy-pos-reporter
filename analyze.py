@@ -135,9 +135,9 @@ def generate_report_data(invoices_df, sales_df, previous_data=None):
 
 if __name__ == "__main__":
     # Test analysis
-    from extract import get_monthly_data
+    from extract import get_data_by_time
 
-    data = get_monthly_data(2025, 1)
+    data = get_data_by_time(2025, 11, day=None)
     report = generate_report_data(data["invoices"], data["sales"])
 
     print("\n=== REPORT METRICS ===")
