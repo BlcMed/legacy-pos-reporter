@@ -1,0 +1,118 @@
+"""
+Send email with PDF report attachment.
+"""
+
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
+from datetime import datetime
+import config
+
+
+def send_report_email(pdf_buffer, month_name, recipient=None):
+    """
+    Send monthly report via email.
+
+    Args:
+        pdf_buffer: BytesIO object containing PDF
+        month_name: Name of the month (e.g., "November 2025")
+        recipient: Optional recipient email (defaults to config.EMAIL_TO)
+    """
+    recipient = recipient or config.EMAIL_TO
+
+    # Validate config
+    if not all([config.EMAIL_FROM, config.EMAIL_PASSWORD, recipient]):
+        raise ValueError("Email configuration incomplete. Check .env file.")
+
+    # Create message
+    msg = MIMEMultipart()
+    msg["From"] = config.EMAIL_FROM
+    msg["To"] = recipient
+    msg["Subject"] = f"{config.REPORT_TITLE} - {month_name}"
+
+    # Email body
+    body = f"""
+Dear Restaurant Owner,
+
+Please find attached the monthly sales report for {month_name}.
+
+This automated report includes:
+- Revenue summary and key metrics
+- Payment method breakdown
+- Service type analysis
+- Top selling items
+- Category performance
+
+If you have any questions about this report, please contact your system administrator.
+
+Best regards,
+{config.RESTAURANT_NAME} Reporting System
+
+---
+This is an automated email. Generated on {datetime.now().strftime("%Y-%m-%d at %H:%M")}
+    """.strip()
+
+    msg.attach(MIMEText(body, "plain"))
+
+    # Attach PDF
+    pdf_buffer.seek(0)
+    part = MIMEBase("application", "octet-stream")
+    part.set_payload(pdf_buffer.read())
+    encoders.encode_base64(part)
+
+    filename = f"Sales_Report_{month_name.replace(' ', '_')}.pdf"
+    part.add_header("Content-Disposition", f"attachment; filename={filename}")
+    msg.attach(part)
+
+    # Send email
+    try:
+        print(f"Connecting to {config.SMTP_SERVER}:{config.SMTP_PORT}...")
+        server = smtplib.SMTP(config.SMTP_SERVER, config.SMTP_PORT)
+        server.starttls()
+
+        print("Logging in...")
+        server.login(config.EMAIL_FROM, config.EMAIL_PASSWORD)
+
+        print(f"Sending email to {recipient}...")
+        server.send_message(msg)
+        server.quit()
+
+        print(f"✓ Email sent successfully to {recipient}")
+        return True
+
+    except smtplib.SMTPAuthenticationError:
+        print("✗ Authentication failed. Check EMAIL_FROM and EMAIL_PASSWORD in .env")
+        raise
+    except smtplib.SMTPException as e:
+        print(f"✗ SMTP error: {e}")
+        raise
+    except Exception as e:
+        print(f"✗ Unexpected error: {e}")
+        raise
+
+
+def test_email_connection():
+    """Test email configuration without sending a report."""
+    try:
+        print(f"Testing connection to {config.SMTP_SERVER}:{config.SMTP_PORT}...")
+        server = smtplib.SMTP(config.SMTP_SERVER, config.SMTP_PORT)
+        server.starttls()
+
+        print("Testing authentication...")
+        server.login(config.EMAIL_FROM, config.EMAIL_PASSWORD)
+        server.quit()
+
+        print("✓ Email configuration is valid!")
+        return True
+
+    except Exception as e:
+        print(f"✗ Email test failed: {e}")
+        return False
+
+
+if __name__ == "__main__":
+    # Test email connection
+    print("Testing email configuration...\n")
+    test_email_connection()
