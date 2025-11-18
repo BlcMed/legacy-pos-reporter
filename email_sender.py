@@ -38,15 +38,6 @@ Dear Restaurant Owner,
 
 Please find attached the monthly sales report for {month_name}.
 
-This automated report includes:
-- Revenue summary and key metrics
-- Payment method breakdown
-- Service type analysis
-- Top selling items
-- Category performance
-
-If you have any questions about this report, please contact your system administrator.
-
 Best regards,
 {config.RESTAURANT_NAME} Reporting System
 
@@ -116,3 +107,24 @@ if __name__ == "__main__":
     # Test email connection
     print("Testing email configuration...\n")
     test_email_connection()
+
+    # Test send_report_email with a PDF file from a known path
+    print("\nTesting send_report_email with PDF from file path...")
+    import os
+
+    pdf_path = "reports/monthly-report-11.pdf"  # Change this path to your known PDF location
+    test_month_name = "November 2025"
+
+    if not os.path.exists(pdf_path):
+        print(f"✗ Test PDF not found at {pdf_path}. Please generate it first.")
+    else:
+        from io import BytesIO
+        try:
+            with open(pdf_path, "rb") as f:
+                pdf_buffer = BytesIO(f.read())
+            pdf_buffer.seek(0)
+            send_report_email(pdf_buffer, test_month_name)
+            print("✓ send_report_email test completed successfully.")
+        except Exception as e:
+            print(f"✗ send_report_email test failed: {e}")
+

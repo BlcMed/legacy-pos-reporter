@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Backup paths
-# BACKUP_BASE_PATH = "D:/backups/"
-BACKUP_BASE_PATH = "./backups/"
+# BACKUP_BASE_PATH = "\D:TORNADO_RESTAURNT"
+BACKUP_BASE_PATH = "./backups/BACKUP16-11-202518-27-05/"
 MDB_FILENAME = "resturant.mdb"
 
 # Email configuration

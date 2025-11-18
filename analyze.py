@@ -50,7 +50,7 @@ def analyze_sales(sales_df):
     """Calculate sales-based metrics."""
     metrics = {}
 
-    # Top selling items
+    # All items, sorted by amount
     top_items = (
         sales_df.groupby("ITEMS")
         .agg({"QTY": "sum", "AMOUNT": "sum", "COST": "sum"})
@@ -58,9 +58,7 @@ def analyze_sales(sales_df):
     )
 
     top_items["PROFIT"] = top_items["AMOUNT"] - top_items["COST"]
-    top_items = top_items.sort_values("AMOUNT", ascending=False).head(
-        config.TOP_ITEMS_COUNT
-    )
+    top_items = top_items.sort_values("AMOUNT", ascending=False)
 
     metrics["top_items"] = top_items.to_dict("records")
 

@@ -492,7 +492,7 @@ if __name__ == "__main__":
     data = get_data_by_time(year=2025, month=month, day=day)  # entire month data
     report = generate_report_data(data["invoices"], data["sales"])
     print(report)
-    generate_pdf(report, f"reports/monthly-report-{month}.pdf")
+    generate_pdf(report, f"reports/monthly-report-{month}.pdf", data_invoices=data["invoices"])
     print("Normal PDF created")
 
     # Generate detailed PDF report for a single day
@@ -511,7 +511,7 @@ if __name__ == "__main__":
 
     from calendar import monthrange
 
-    for month in range(9, 12):
+    for month in range(3, 12):
         num_days = monthrange(2025, month)[1]
         for day in range(1, num_days + 1):
             data_day = get_data_by_time(2025, month, day=day)
@@ -521,6 +521,6 @@ if __name__ == "__main__":
             generate_pdf(
                 report_data=report_day,
                 data_invoices=data_invoices,
-                output_path=f"reports/dailydetailed_report_{month}_{day}.pdf",
+                output_path=f"reports/daily/dailydetailed_report_{month}_{day}.pdf",
             )
             print(f"Detailed PDF created for {month}/{day}/2025")

@@ -10,25 +10,6 @@ from io import StringIO
 import config  # your config file
 
 
-def find_latest_backup():
-    """Find the most recent backup folder."""
-    backup_path = Path(config.BACKUP_BASE_PATH)
-
-    if not backup_path.exists():
-        raise FileNotFoundError(f"Backup path not found: {config.BACKUP_BASE_PATH}")
-
-    backup_folders = [
-        f
-        for f in backup_path.iterdir()
-        if f.is_dir() and f.name.upper().startswith("BACKUP")
-    ]
-    if not backup_folders:
-        raise FileNotFoundError("No backup folders found")
-
-    # Sort by modification time, get latest
-    latest_backup = max(backup_folders, key=lambda x: x.stat().st_mtime)
-    return latest_backup
-
 
 def export_table(mdb_file, table_name):
     """
@@ -83,7 +64,7 @@ def get_data_by_time(year, month=None, day=None):
     Get invoice and sales data for a specific month.
     Returns dictionary with DataFrames.
     """
-    backup_folder = find_latest_backup()
+    backup_folder = Path(config.BACKUP_BASE_PATH)
     print(f"Using backup: {backup_folder}")
 
     mdb_file = backup_folder / config.MDB_FILENAME
