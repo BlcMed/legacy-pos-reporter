@@ -11,14 +11,15 @@ from datetime import datetime
 import config
 
 
-def send_report_email(pdf_buffer, month_name, recipient=None):
+def send_report_email(pdf_buffer, report_date_str, recipient=None, report_type="monthly"):
     """
-    Send monthly report via email.
+    Send report (monthly or daily) via email.
 
     Args:
         pdf_buffer: BytesIO object containing PDF
-        month_name: Name of the month (e.g., "November 2025")
+        report_date_str: Date string for the report, e.g. "November 2025" or "March 8, 2025"
         recipient: Optional recipient email (defaults to config.EMAIL_TO)
+        report_type: "monthly" or "daily" or any string to describe report type
     """
     recipient = recipient or config.EMAIL_TO
 
@@ -26,17 +27,19 @@ def send_report_email(pdf_buffer, month_name, recipient=None):
     if not all([config.EMAIL_FROM, config.EMAIL_PASSWORD, recipient]):
         raise ValueError("Email configuration incomplete. Check .env file.")
 
-    # Create message
+    # Use "Monthly" or "Daily" or given type (capitalize)
+    report_type_cap = report_type.capitalize()
+
     msg = MIMEMultipart()
     msg["From"] = config.EMAIL_FROM
     msg["To"] = recipient
-    msg["Subject"] = f"{config.REPORT_TITLE} - {month_name}"
+    msg["Subject"] = f"{config.REPORT_TITLE} - {report_type_cap} Report - {report_date_str}"
 
     # Email body
     body = f"""
 Dear Restaurant Owner,
 
-Please find attached the monthly sales report for {month_name}.
+Please find attached the {report_type} sales report for {report_date_str}.
 
 Best regards,
 {config.RESTAURANT_NAME} Reporting System
@@ -53,7 +56,8 @@ This is an automated email. Generated on {datetime.now().strftime("%Y-%m-%d at %
     part.set_payload(pdf_buffer.read())
     encoders.encode_base64(part)
 
-    filename = f"Sales_Report_{month_name.replace(' ', '_')}.pdf"
+    filename_safe = report_date_str.replace(" ", "_").replace(",", "")
+    filename = f"Sales_Report_{report_type_cap}_{filename_safe}.pdf"
     part.add_header("Content-Disposition", f"attachment; filename={filename}")
     msg.attach(part)
 

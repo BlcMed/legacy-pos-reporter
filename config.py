@@ -1,31 +1,32 @@
 """
 Configuration settings for the restaurant report system.
+Reads all configurable values from `settings.ini`.
 """
 
+import configparser
 import os
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+SETTINGS_FILE = os.path.join(os.path.dirname(__file__), './settings.ini')
+
+config = configparser.ConfigParser()
+config.read(SETTINGS_FILE)
 
 # Backup paths
 # BACKUP_BASE_PATH = "\D:TORNADO_RESTAURNT"
-BACKUP_BASE_PATH = "./backups/BACKUP16-11-202518-27-05/"
+BACKUP_BASE_PATH = "./backups"
 MDB_FILENAME = "resturant.mdb"
+MONTHLY_REPORTS_PATH = "./reports/monthly"
+DAILY_REPORTS_PATH = "./reports/daily"
 
-# Email configuration
-EMAIL_FROM = os.getenv("EMAIL_FROM")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
-EMAIL_TO = os.getenv("EMAIL_TO")
-SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+# Email configuration (from settings.ini)
+EMAIL_FROM = config["EMAIL"].get("email_from", "example@gmail.com")
+EMAIL_PASSWORD = config["EMAIL"].get("email_password", "")
+EMAIL_TO = config["EMAIL"].get("email_to", "")
+SMTP_SERVER = config["EMAIL"].get("smtp_server", "smtp.gmail.com")
+SMTP_PORT = int(config["EMAIL"].get("smtp_port", "587"))
 
 # Restaurant info
-RESTAURANT_NAME = os.getenv("RESTAURANT_NAME", "TORNADO RESTAURANT")
+RESTAURANT_NAME = "TORNADO RESTAURANT"
 
 # Report settings
-REPORT_TITLE = "Monthly Sales Report"
-TOP_ITEMS_COUNT = 10
-
-# Date format in MDB
-MDB_DATE_FORMAT = "%m/%d/%y %H:%M:%S"
+REPORT_TITLE = "Sales Report"

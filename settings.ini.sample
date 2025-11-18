@@ -1,0 +1,10 @@
+[EMAIL]
+email_from = example@gmail.com
+email_password = 
+email_to = manager@example.com
+smtp_server = smtp.gmail.com
+smtp_port = 587
+
+[REPORT]
+daily = 1
+monthly = 1

@@ -7,7 +7,7 @@ import subprocess
 import pandas as pd
 from pathlib import Path
 from io import StringIO
-import config  # your config file
+import config
 
 
 

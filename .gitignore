@@ -1,5 +1,6 @@
 __pycache__/
 backups/
-reports/
+*reports/
 *.pdf
 .env
+*.ini

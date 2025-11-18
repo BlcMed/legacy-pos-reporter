@@ -202,7 +202,7 @@ def create_top_items_section(report_data):
 
     elements.append(
         Paragraph(
-            f"<b>TOP {config.TOP_ITEMS_COUNT} SELLING ITEMS</b>",
+            "<b>RANKED SELLING ITEMS</b>",
             getSampleStyleSheet()["Heading2"],
         )
     )
@@ -416,6 +416,35 @@ def create_invoice_table(data_invoices, styles):
     return elements
 
 
+def generate_no_sales_pdf(output_path=None):
+    """
+    Generate a PDF that displays a note indicating there are no sales today.
+    If output_path is given, saves to that path. Otherwise, returns a BytesIO buffer.
+    """
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.platypus import SimpleDocTemplate, Spacer, Paragraph
+    from reportlab.lib.units import inch
+    styles = getSampleStyleSheet()
+
+    note_style = styles['Title']
+    note_style.textColor = "#333333"
+    note = Paragraph("No sales today.", note_style)
+    elements = [Spacer(1, 2 * inch), note]
+
+    if output_path:
+        pdf = SimpleDocTemplate(output_path, pagesize=letter)
+        pdf.build(elements)
+        print(f"Zero-sales PDF generated: {output_path}")
+        return None
+    else:
+        from io import BytesIO
+        buffer = BytesIO()
+        pdf = SimpleDocTemplate(buffer, pagesize=letter)
+        pdf.build(elements)
+        buffer.seek(0)
+        return buffer
+
 def generate_pdf(report_data, output_path=None, data_invoices=None):
     """
     Generate PDF report from analyzed data. If is_detailed is True,
@@ -429,7 +458,8 @@ def generate_pdf(report_data, output_path=None, data_invoices=None):
     Returns:
         BytesIO object if output_path is None, otherwise None
     """
-    # Check for zero transactions -- abort PDF generation if none
+
+    # Check for zero transactions and generate a "no sales" PDF if so
     if (
         not report_data
         or "invoices" not in report_data
@@ -440,7 +470,9 @@ def generate_pdf(report_data, output_path=None, data_invoices=None):
             print(f"Skipped PDF generation for {output_path} - {msg}")
         else:
             print(msg)
-        return None
+        # return None
+        return generate_no_sales_pdf(output_path=output_path)
+
 
     # Create PDF
     if output_path:
@@ -492,8 +524,8 @@ if __name__ == "__main__":
     data = get_data_by_time(year=2025, month=month, day=day)  # entire month data
     report = generate_report_data(data["invoices"], data["sales"])
     print(report)
-    generate_pdf(report, f"reports/monthly-report-{month}.pdf", data_invoices=data["invoices"])
-    print("Normal PDF created")
+    generate_pdf(report, f"{config.MONTHLY_REPORTS_PATH}/monthly-report-{month}.pdf", data_invoices=data["invoices"])
+    print("Monthly PDF created")
 
     # Generate detailed PDF report for a single day
     day = 1
@@ -505,9 +537,9 @@ if __name__ == "__main__":
     generate_pdf(
         report_data=report_day,
         data_invoices=data_invoices,
-        output_path=f"reports/detailed_report_{month}_{day}.pdf",
+        output_path=f"{config.DAILY_REPORTS_PATH}/daily-report_{month}_{day}.pdf",
     )
-    print("Detailed PDF created")
+    print("Daily PDF created")
 
     from calendar import monthrange
 
