@@ -12,7 +12,6 @@ config = configparser.ConfigParser()
 config.read(SETTINGS_FILE)
 
 # Backup paths
-# BACKUP_BASE_PATH = "\D:TORNADO_RESTAURNT"
 BACKUP_BASE_PATH = "./backups"
 MDB_FILENAME = "resturant.mdb"
 MONTHLY_REPORTS_PATH = "./reports/monthly"

@@ -69,18 +69,13 @@ def save_config():
 
     messagebox.showinfo("Saved", "Settings saved successfully.")
 
-def browse_folder():
-    folder = filedialog.askdirectory()
-    if folder:
-        backup_path_entry.delete(0, tk.END)
-        backup_path_entry.insert(0, folder)
 
 # Load initial values (from config file, using file as default source)
 initial_config = load_initial_config()
 
 root = tk.Tk()
 root.title("Restaurant Report Configuration")
-root.geometry("450x40")
+root.geometry("450x400")
 
 # Email settings
 tk.Label(root, text="\nEmail Settings").pack()
