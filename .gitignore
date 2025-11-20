@@ -4,3 +4,4 @@ backups/
 *.pdf
 .env
 *.ini
+*.sh

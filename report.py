@@ -360,7 +360,7 @@ def create_invoice_table(data_invoices, styles):
     # Prepare table data: headers first, then per-row values
     headers = [label for _, label in COLUMNS]
     table_data = [headers]
-    date_fmt = "%Y-%m-%d"
+    date_fmt = "%Y-%m-%d %H:%M:%S"
 
     for _, row in df.iterrows():
         row_data = []
@@ -425,9 +425,10 @@ def generate_no_sales_pdf(output_path=None):
     from reportlab.lib.styles import getSampleStyleSheet
     from reportlab.platypus import SimpleDocTemplate, Spacer, Paragraph
     from reportlab.lib.units import inch
+
     styles = getSampleStyleSheet()
 
-    note_style = styles['Title']
+    note_style = styles["Title"]
     note_style.textColor = "#333333"
     note = Paragraph("No sales today.", note_style)
     elements = [Spacer(1, 2 * inch), note]
@@ -439,11 +440,13 @@ def generate_no_sales_pdf(output_path=None):
         return None
     else:
         from io import BytesIO
+
         buffer = BytesIO()
         pdf = SimpleDocTemplate(buffer, pagesize=letter)
         pdf.build(elements)
         buffer.seek(0)
         return buffer
+
 
 def generate_pdf(report_data, output_path=None, data_invoices=None):
     """
@@ -472,7 +475,6 @@ def generate_pdf(report_data, output_path=None, data_invoices=None):
             print(msg)
         # return None
         return generate_no_sales_pdf(output_path=output_path)
-
 
     # Create PDF
     if output_path:
@@ -514,23 +516,26 @@ def generate_pdf(report_data, output_path=None, data_invoices=None):
 
 if __name__ == "__main__":
     # Test PDF generation
-    from extract import get_data_by_time
+    from extract import get_monthly_data, get_daily_data
     from analyze import generate_report_data
 
     month = 11
-    day = None
-
     # Generate normal (summary) PDF report for the whole month
-    data = get_data_by_time(year=2025, month=month, day=day)  # entire month data
+
+    data = get_monthly_data(year=2025, month=month)  # entire month data
     report = generate_report_data(data["invoices"], data["sales"])
     print(report)
-    generate_pdf(report, f"{config.MONTHLY_REPORTS_PATH}/monthly-report-{month}.pdf", data_invoices=data["invoices"])
+    generate_pdf(
+        report,
+        f"{config.MONTHLY_REPORTS_PATH}/monthly-report-{month}.pdf",
+        data_invoices=data["invoices"],
+    )
     print("Monthly PDF created")
 
     # Generate detailed PDF report for a single day
-    day = 1
-    month = 3
-    data_day = get_data_by_time(2025, month, day=day)
+    month = 11
+    day = 19
+    data_day = get_daily_data(2025, month=month, day=day)
     data_invoices = data_day["invoices"]
     data_sales = data_day["sales"]
     report_day = generate_report_data(data_invoices, data_sales)
@@ -540,19 +545,3 @@ if __name__ == "__main__":
         output_path=f"{config.DAILY_REPORTS_PATH}/daily-report_{month}_{day}.pdf",
     )
     print("Daily PDF created")
-
-    from calendar import monthrange
-
-    for month in range(3, 12):
-        num_days = monthrange(2025, month)[1]
-        for day in range(1, num_days + 1):
-            data_day = get_data_by_time(2025, month, day=day)
-            data_invoices = data_day["invoices"]
-            data_sales = data_day["sales"]
-            report_day = generate_report_data(data_invoices, data_sales)
-            generate_pdf(
-                report_data=report_day,
-                data_invoices=data_invoices,
-                output_path=f"reports/daily/dailydetailed_report_{month}_{day}.pdf",
-            )
-            print(f"Detailed PDF created for {month}/{day}/2025")

@@ -2,7 +2,7 @@
 Analyze sales and invoice data to generate metrics.
 """
 
-import config
+from extract import get_daily_data
 
 
 def analyze_invoices(invoices_df):
@@ -88,22 +88,7 @@ def analyze_sales(sales_df):
     return metrics
 
 
-def calculate_growth(current_metrics, previous_metrics):
-    """Calculate growth percentage compared to previous month."""
-    if not previous_metrics:
-        return None
-
-    current_revenue = current_metrics["invoices"]["total_revenue"]
-    previous_revenue = previous_metrics["invoices"]["total_revenue"]
-
-    if previous_revenue == 0:
-        return None
-
-    growth = ((current_revenue - previous_revenue) / previous_revenue) * 100
-    return round(growth, 1)
-
-
-def generate_report_data(invoices_df, sales_df, previous_data=None):
+def generate_report_data(invoices_df, sales_df):
     """
     Generate complete report data from dataframes.
 
@@ -124,18 +109,17 @@ def generate_report_data(invoices_df, sales_df, previous_data=None):
         },
     }
 
-    # Add growth if previous data available
-    if previous_data:
-        report["growth"] = calculate_growth(report, previous_data)
-
     return report
 
 
 if __name__ == "__main__":
     # Test analysis
-    from extract import get_data_by_time
+    from extract import get_daily_data  # , get_data_by_time
 
-    data = get_data_by_time(2025, 11, day=None)
+    # start_datetime = "2025-11-19 14:00"
+    # end_datetime = "2025-11-20 04:00"
+    # data = get_data_by_time(start_datetime, end_datetime)
+    data = get_daily_data(2025, 11, 19)
     report = generate_report_data(data["invoices"], data["sales"])
 
     print("\n=== REPORT METRICS ===")

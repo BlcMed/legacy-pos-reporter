@@ -6,7 +6,7 @@ from datetime import datetime
 import sys
 import traceback
 
-from extract import get_data_by_time
+from extract import get_monthly_data
 from analyze import generate_report_data
 from report import generate_pdf
 from email_sender import send_report_email
@@ -33,7 +33,7 @@ def main():
         date_str = report_date.strftime("%B %Y")
         print(f"Generating report for: {date_str}")
 
-        data = get_data_by_time(year=year, month=month)
+        data = get_monthly_data(year=year, month=month)
         report = generate_report_data(data["invoices"], data["sales"])
         print(report)
         monthly_pdf_path = f"{config.MONTHLY_REPORTS_PATH}/monthly-report-{month}.pdf"

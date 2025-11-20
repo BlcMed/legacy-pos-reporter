@@ -10,7 +10,6 @@ from io import StringIO
 import config
 
 
-
 def export_table(mdb_file, table_name):
     """
     Export an MDB table to pandas DataFrame using mdb-export.
@@ -28,38 +27,91 @@ def export_table(mdb_file, table_name):
     return df
 
 
-def filter_table_by_time(mdb_file, table_name, year, month=None, day=None):
-    """Extract INVOICE table for a given monthnd a day."""
+def filter_table_by_time(
+    mdb_file,
+    table_name,
+    start_datetime=None,
+    end_datetime=None,
+):
+    """
+    Filter table rows where the combined DATE and TIME fall between two timestamps
+    (start_datetime and end_datetime), and optionally filter by hour.
+
+    Args:
+        mdb_file: The .mdb file path.
+        table_name: Table to extract.
+        start_datetime: Inclusive minimum datetime (str, datetime, or None).
+        end_datetime: Inclusive maximum datetime (str, datetime, or None).
+
+    Returns:
+        pandas.DataFrame with rows filtered by the time range.
+
+    Example usage:
+        # To extract all records between 2025-11-05 08:00 and 2025-11-10 23:59, with hours from 9 to 18:
+        df = filter_table_by_time(
+            "resturant.mdb",
+            "INVOICE",
+            start_datetime="2025-11-05 08:00",
+            end_datetime="2025-11-10 23:59",
+        )
+    """
     df = export_table(mdb_file, table_name)
+    # Parse DATE (get the date part)
     df["DATE"] = pd.to_datetime(df["DATE"], format="%m/%d/%y %H:%M:%S", errors="coerce")
-    # Filter by month
-    if day and month:
-        df = df[
-            (df["DATE"].dt.year == year)
-            & (df["DATE"].dt.month == month)
-            & (df["DATE"].dt.day == day)
-        ]
-    elif month:
-        df = df[(df["DATE"].dt.year == year) & (df["DATE"].dt.month == month)]
-    else:
-        df = df[(df["DATE"].dt.year == year)]
+    # Parse TIME (get the time part only)
+    time_parsed = pd.to_datetime(
+        df["TIME"], format="%m/%d/%y %H:%M:%S", errors="coerce"
+    )
+    # Combine: date from DATE column + time from TIME column
+    df["DATE"] = pd.to_datetime(
+        df["DATE"].dt.date.astype(str) + " " + time_parsed.dt.time.astype(str)
+    )
+
+    # Filter by datetime range if provided
+    if start_datetime is not None:
+        start = pd.to_datetime(start_datetime)
+        df = df[df["DATE"] >= start]
+    if end_datetime is not None:
+        end = pd.to_datetime(end_datetime)
+        df = df[df["DATE"] <= end]
 
     return df
 
 
-def extract_invoices(mdb_file, year, month=None, day=None):
+def extract_invoices(
+    mdb_file,
+    start_datetime=None,
+    end_datetime=None,
+):
     """Extract INVOICE table for a given month and day."""
-    df = filter_table_by_time(mdb_file, "INVOICE", year, month, day)
+    df = filter_table_by_time(
+        mdb_file,
+        "INVOICE",
+        start_datetime=start_datetime,
+        end_datetime=end_datetime,
+    )
     return df
 
 
-def extract_sales(mdb_file, year, month=None, day=None):
+def extract_sales(
+    mdb_file,
+    start_datetime=None,
+    end_datetime=None,
+):
     """Extract SALE table for a given month and day."""
-    df = filter_table_by_time(mdb_file, "SALE", year, month, day)
+    df = filter_table_by_time(
+        mdb_file,
+        "SALE",
+        start_datetime=start_datetime,
+        end_datetime=end_datetime,
+    )
     return df
 
 
-def get_data_by_time(year, month=None, day=None):
+def get_data_by_time(
+    start_datetime=None,
+    end_datetime=None,
+):
     """
     Get invoice and sales data for a specific month.
     Returns dictionary with DataFrames.
@@ -71,15 +123,72 @@ def get_data_by_time(year, month=None, day=None):
     if not mdb_file.exists():
         raise FileNotFoundError(f"MDB file not found: {mdb_file}")
 
-    invoices = extract_invoices(mdb_file, year, month, day)
-    sales = extract_sales(mdb_file, year, month, day)
+    invoices = extract_invoices(
+        mdb_file, start_datetime=start_datetime, end_datetime=end_datetime
+    )
+    sales = extract_sales(
+        mdb_file, start_datetime=start_datetime, end_datetime=end_datetime
+    )
 
     print(f"Extracted {len(invoices)} invoices and {len(sales)} sales records")
     return {"invoices": invoices, "sales": sales, "backup_folder": backup_folder}
 
 
+def get_monthly_data(year, month):
+    """
+    Get invoice and sales data for an entire month.
+    Each day starts at 14:00 of the current day and ends at 04:00 of the next day.
+    """
+    from datetime import datetime
+
+    # First day at 14:00
+    start_datetime = datetime(year, month, 1, 14, 0)
+    # Next month's 1st day at 4:00am
+    if month == 12:
+        next_month = 1
+        next_year = year + 1
+    else:
+        next_month = month + 1
+        next_year = year
+
+    end_datetime = datetime(next_year, next_month, 1, 4, 0)
+    return get_data_by_time(start_datetime=start_datetime, end_datetime=end_datetime)
+
+
+def get_daily_data(year, month, day):
+    """
+    Get invoice and sales data for a single business day.
+    A business day starts at 14:00 of (year, month, day) and ends at 04:00 the next calendar day.
+    """
+    from datetime import datetime, timedelta
+
+    start_datetime = datetime(year, month, day, 14, 0)
+    # Handle day roll-over for end time
+    end_time = datetime(year, month, day, 4, 0) + timedelta(days=1)
+    end_datetime = end_time
+    return get_data_by_time(start_datetime=start_datetime, end_datetime=end_datetime)
+
+
 if __name__ == "__main__":
-    data = get_data_by_time(year=2025, month=9, day=17)
+    start_datetime = "2025-11-19 14:00"
+    end_datetime = "2025-11-20 04:00"
+    data = get_data_by_time(start_datetime, end_datetime)
+
+    print(10*"=")
+    print("\nInvoices sample:")
+    print(data["invoices"].head())
+    print("\nSales sample:")
+    print(data["sales"].head())
+
+    data = get_daily_data(2025, 11, 19)
+    print(10*"=")
+    print("\nInvoices sample:")
+    print(data["invoices"].head())
+    print("\nSales sample:")
+    print(data["sales"].head())
+    
+    data = get_monthly_data(2025, 11)
+    print(10*"=")
     print("\nInvoices sample:")
     print(data["invoices"].head())
     print("\nSales sample:")

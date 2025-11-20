@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import sys
 import traceback
 
-from extract import get_data_by_time
+from extract import get_daily_data
 from analyze import generate_report_data
 from report import generate_pdf
 from email_sender import send_report_email
@@ -33,7 +33,7 @@ def main():
         date_str = report_date.strftime("%B %d, %Y")
         print(f"Generating report for: {date_str}")
 
-        data = get_data_by_time(year=year, month=month, day=day)
+        data = get_daily_data(year=year, month=month, day=day)
         report = generate_report_data(data["invoices"], data["sales"])
         print(report)
         daily_pdf_path=f"{config.DAILY_REPORTS_PATH}/daily-report-{month}-{day}.pdf"
