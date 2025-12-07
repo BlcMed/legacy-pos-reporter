@@ -1,6 +1,6 @@
-# Tornado Restaurant Sales Report System
-
-This project automates the extraction and reporting of sales data from Tornado Restaurant, produces PDF reports and send reports by email (configurable).
+# Legacy Poing Of Sales Report System
+    
+This project automates the extraction and reporting of sales data from a legacy POS system (Visual Basic frontend with Microsoft Access `.mdb` database). It produces PDF reports and sends them by email (configurable).
 
 **Requirements:**
 

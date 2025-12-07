@@ -6,11 +6,11 @@ from datetime import datetime, timedelta
 import sys
 import traceback
 
-from extract import get_daily_data
-from analyze import generate_report_data
-from report import generate_pdf
-from email_sender import send_report_email
-import config as config
+from app.extract import get_daily_data
+from app.analyze import generate_report_data
+from app.report import generate_pdf
+from app.email_sender import send_report_email
+import app.config as config
 
 
 def get_yesterday():

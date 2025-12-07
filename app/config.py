@@ -6,8 +6,8 @@ Reads all configurable values from `settings.ini`.
 import configparser
 import os
 
-SETTINGS_FILE = os.path.join(os.path.dirname(__file__), './settings.ini')
-CONFIG_FILE =  os.path.join(os.path.dirname(__file__), './config.ini')
+SETTINGS_FILE = os.path.join(os.path.dirname(__file__), '../settings.ini')
+CONFIG_FILE =  os.path.join(os.path.dirname(__file__), '../config.ini')
 
 config = configparser.ConfigParser()
 config.read([SETTINGS_FILE, CONFIG_FILE])

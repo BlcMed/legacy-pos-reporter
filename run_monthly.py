@@ -6,11 +6,11 @@ from datetime import datetime
 import sys
 import traceback
 
-from extract import get_monthly_data
-from analyze import generate_report_data
-from report import generate_pdf
-from email_sender import send_report_email
-import config as config
+from app.extract import get_monthly_data
+from app.analyze import generate_report_data
+from app.report import generate_pdf
+from app.email_sender import send_report_email
+import app.config as config
 
 
 def get_current_month():
