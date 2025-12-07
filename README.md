@@ -69,4 +69,7 @@ You can automate the daily reporting using **Windows Task Scheduler** to trigger
 
 7.  Finish the wizard.
 
-For setup help or questions, **contact boulaich.mohamed970@gmail.com**.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
